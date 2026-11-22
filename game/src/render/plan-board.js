@@ -9,6 +9,8 @@ import { drawToolIcon } from '../ui/hud.js';
 import { TOOLS, kitCost } from '../systems/tools.js';
 import { C, font, FONT_DISPLAY } from './palette.js';
 import { CAMERA_RANGE, CAMERA_HALF } from '../actors/camera.js';
+import { planRoutes } from '../systems/routes.js';
+import { drawRoutes } from './routes-overlay.js';
 
 export const SHOP_CARD = { x0: 14, w: 150, step: 158, y: 650, h: 60 };
 
@@ -61,6 +63,11 @@ export function drawPlanBoard(g, plan, time) {
     g.setLineDash([]);
     drawCamera(g, cam, time);
   }
+
+  // the ways in, for the chosen entry
+  const entry = run.map.entries[plan.entry];
+  if (!plan.routes || plan.routesFor !== plan.entry) { plan.routes = planRoutes(run.map, entry); plan.routesFor = plan.entry; }
+  drawRoutes(g, plan.routes, time, 0.95);
 
   // entry points
   run.map.entries.forEach((e, i) => {

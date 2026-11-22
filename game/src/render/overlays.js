@@ -47,7 +47,7 @@ export function drawTitle(g, time, best) {
   const lines = [
     'WASD or arrows: move     Shift: sneak (silent, slower)',
     'E (hold): pick locks, cut glass, crack the vault',
-    '1-5: choose a tool     Click or Space: throw or use it',
+    '1-5: choose a tool     Click or Space: throw or use it     Q: route chalk',
     'Stay in hatched shadow, read the lantern cones, then move.',
     'Grab the target, reach the getaway boat before the quay seals.',
   ];
@@ -70,7 +70,10 @@ export function drawCaught(g, run, time) {
   if (cb && !lock) {
     // circle the warden and the thief, and draw the line of sight that caught you
     g.save();
+    const v = run.view || { zoom: 1, ox: 0, oy: 0 };
     g.translate(0, MAP_Y);
+    g.scale(v.zoom, v.zoom);
+    g.translate(-v.ox, -v.oy);
     g.strokeStyle = C.lanternHot;
     g.lineWidth = 3;
     g.setLineDash([8, 6]);
@@ -82,30 +85,30 @@ export function drawCaught(g, run, time) {
     g.beginPath(); g.arc(run.thief.x, run.thief.y, r, 0, Math.PI * 2); g.stroke();
     g.restore();
   }
-  const x = 380, y = 200;
-  panel(g, x, y, 520, 230);
+  const x = 380, y = 436;
+  panel(g, x, y, 520, 196);
   g.textAlign = 'center';
-  g.font = font(46, 'bold', FONT_DISPLAY);
+  g.font = font(40, 'bold', FONT_DISPLAY);
   g.fillStyle = C.lanternHot;
-  g.fillText(lock ? 'Lockdown' : 'Caught', 640, y + 62);
+  g.fillText(lock ? 'Lockdown' : 'Caught', 640, y + 50);
   g.font = font(17);
   g.fillStyle = C.text;
   if (lock) {
-    g.fillText(run.alarm.lastReason || 'The alarm hit 100%.', 640, y + 100);
-    g.fillText('Every door in the building just sealed.', 640, y + 126);
+    g.fillText(run.alarm.lastReason || 'The alarm hit 100%.', 640, y + 84);
+    g.fillText('Every door in the building just sealed.', 640, y + 108);
   } else if (cb) {
-    g.fillText(`${cb.name} had you in the lantern for ${cb.seenFor.toFixed(1)} s.`, 640, y + 100);
+    g.fillText(`${cb.name} had you in the lantern for ${cb.seenFor.toFixed(1)} s.`, 640, y + 84);
     const why = cb.inShadow ? 'Even shadow fails when a warden is this close.' : cb.sneaking ? 'You were sneaking, but standing in the light.' : 'You were walking upright in the light. Shift to sneak, hug the hatched shadow.';
     g.fillStyle = C.textDim;
     g.font = font(15);
-    g.fillText(why, 640, y + 126);
+    g.fillText(why, 640, y + 108);
   }
   g.font = font(18, 'bold');
   g.fillStyle = C.loot;
-  g.fillText('R: retry this job with the same kit', 640, y + 172);
+  g.fillText('R: retry this job with the same kit', 640, y + 148);
   g.fillStyle = C.textDim;
   g.font = font(15);
-  g.fillText('P: back to the planning board', 640, y + 200);
+  g.fillText('P: back to the planning board', 640, y + 174);
 }
 
 export function drawResults(g, run, score, purse, time, isLast) {

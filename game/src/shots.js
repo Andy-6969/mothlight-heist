@@ -29,8 +29,8 @@ export function stageShot(game, name) {
     const run = game.run;
     place(run, 1, 9);
     advance(game, 6.2);
-    place(run, 17, 9);
-    run.thief.facing = -0.3;
+    place(run, 33, 10);
+    run.thief.facing = -1.2;
     run.lootValue = 380;
     run.lootCount = 2;
     run.map.loot[0].taken = true;
@@ -38,12 +38,16 @@ export function stageShot(game, name) {
     run.kit.cutter = 0;
     raiseAlarm(run.alarm, 41, 'Camera spotted you');
     run.alarm.flash = 0;
-    run.smokes.push({ x: 26 * TILE, y: 12.5 * TILE, r: 58, life: 5, grow: 1 });
-    advance(game, 0.4);
-    run.guards[1].suspicion = 0.62;
-    run.guards[1].state = 'suspicious';
+    run.smokes.push({ x: 29.5 * TILE, y: 13 * TILE, r: 58, life: 5, grow: 1 });
+    advance(game, 0.3);
+    const [osric, hale, pim] = run.guards;
+    Object.assign(hale, { x: 27.5 * TILE, y: 9.6 * TILE, angle: 0.08, state: 'suspicious', suspicion: 0.46, path: [] });
+    Object.assign(pim, { x: 36.5 * TILE, y: 12.5 * TILE, angle: -2.2, state: 'patrol', suspicion: 0, path: [] });
+    void osric;
     run.thief.sneaking = true;
     run.thief.moving = true;
+    run.thief.inShadow = true;
+    run.routeTimer = 0;
     run.time = 74;
     game.toast = null;
   } else if (name === 'plan') {
@@ -74,6 +78,7 @@ export function stageShot(game, name) {
     run.thief.carrying = true;
     run.lootValue = 2200 + 380;
     run.getaway = { left: 38 };
+    run.routeTimer = 0;
     place(run, 33, 13);
     run.thief.facing = 0.2;
     run.thief.moving = true;

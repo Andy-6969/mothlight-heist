@@ -8,6 +8,7 @@ import { drawTitle, drawCaught, drawResults, drawFinale } from './render/overlay
 import { unlockAudio } from './audio/synth.js';
 import { LEVELS } from './world/levels.js';
 import { stageShot } from './shots.js';
+import { worldToScreen } from './world/viewport.js';
 import { C, font } from './render/palette.js';
 
 const canvas = document.getElementById('game');
@@ -104,6 +105,7 @@ window.__mothlight = {
   game,
   input,
   startPlan,
+  worldToScreen,
   step(frames = 1) { for (let i = 0; i < frames; i++) { updateGame(game, input, STEP); input.endFrame(); } },
 };
 requestAnimationFrame(frame);

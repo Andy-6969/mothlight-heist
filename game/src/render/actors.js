@@ -35,7 +35,7 @@ export function drawThief(g, t, time) {
   g.font = font(11, 'bold');
   g.textAlign = 'center';
   g.fillStyle = C.wing;
-  g.fillText(t.sneaking ? 'Moth (sneaking)' : 'Moth', t.x, t.y + 27);
+  g.fillText(t.inShadow ? 'Moth (in shadow)' : t.sneaking ? 'Moth (sneaking)' : 'Moth', t.x, t.y + 27);
   if (t.carrying) {
     g.fillStyle = C.loot;
     g.beginPath(); g.arc(t.x - 9, t.y - 11, 4, 0, Math.PI * 2); g.fill();
@@ -72,7 +72,7 @@ function drawSuspicion(g, guard, time) {
   g.textAlign = 'center';
   g.fillStyle = guard.state === 'alert' ? C.lanternHot : C.lantern;
   const mood = { alert: 'alerted', investigate: 'investigating', search: 'searching', suspicious: 'suspicious', pause: 'uneasy', patrol: 'uneasy' }[guard.state];
-  g.fillText(`${guard.name}: ${mood}`, x, guard.y + 30);
+  g.fillText(`${guard.name}: ${mood}`, x, guard.y - 40);
   if (guard.state === 'alert') {
     g.fillStyle = C.lanternHot;
     g.font = font(20, 'bold');

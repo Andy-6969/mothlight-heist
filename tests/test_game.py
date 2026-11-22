@@ -99,11 +99,13 @@ def test_smoke_blocks_sight(page, errors):
       const g = r.guards[0];
       g.x = 14.5 * 32; g.y = 9.5 * 32; g.angle = 0; g.route = [{x:g.x,y:g.y},{x:g.x+1,y:g.y}];
       r.thief.x = g.x + 150; r.thief.y = g.y;
-      I.mouse.x = g.x + 70; I.mouse.y = g.y + 64; I.mouse.clicked = true; m.step(1);
+      const s = m.worldToScreen(r, g.x + 70, g.y);
+      I.mouse.x = s.x; I.mouse.y = s.y; I.mouse.clicked = true; m.step(1);
+      const landed = r.smokes[0] && Math.abs(r.smokes[0].x - (g.x + 70)) < 2;
       m.step(60);
-      return { smokes: r.smokes.length, sus: g.suspicion };
+      return { smokes: r.smokes.length, sus: g.suspicion, landed };
     }""")
-    assert res["smokes"] == 1
+    assert res["smokes"] == 1 and res["landed"], res
     assert res["sus"] < 0.1
 
 

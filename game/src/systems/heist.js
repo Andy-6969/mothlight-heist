@@ -9,6 +9,8 @@ import { createAlarm, raiseAlarm, coolAlarm, alarmTier, isLockdown } from './ala
 import { TOOLS, throwPoint, SMOKE_SECONDS, SMOKE_RADIUS } from './tools.js';
 import { nearestJob, jobSeconds } from './interact.js';
 import { dist } from '../core/math.js';
+import { screenToWorld } from '../world/viewport.js';
+import { planRoutes } from './routes.js';
 
 export const GETAWAY_SECONDS = 75;
 const LASER_ON = 2.1;
@@ -41,6 +43,9 @@ export function createRun(level, kit, entryIndex = 0) {
     alerts: 0,
     job: null,
     laserTouch: false,
+    routes: planRoutes(map, entry),
+    routeTimer: 12,
+    routesPinned: false,
   };
 }
 
@@ -62,14 +67,14 @@ function useTool(run, input) {
   const tool = TOOLS.find((t) => t.id === run.selected);
   if (!tool || !(run.kit[tool.id] > 0)) { emit(run, 'deny'); return; }
   const { thief } = run;
-  const m = input.mouse;
+  const m = screenToWorld(run, input.mouse.x, input.mouse.y);
   if (tool.id === 'smoke') {
-    const p = throwPoint(thief, tool, m.x, m.y - 64);
+    const p = throwPoint(thief, tool, m.x, m.y);
     run.smokes.push({ x: p.x, y: p.y, r: SMOKE_RADIUS, life: SMOKE_SECONDS, grow: 0 });
     run.kit.smoke--;
     emit(run, 'smoke', p);
   } else if (tool.id === 'lure') {
-    const p = throwPoint(thief, tool, m.x, m.y - 64);
+    const p = throwPoint(thief, tool, m.x, m.y);
     run.bells.push({ x: p.x, y: p.y, life: 2.4 });
     run.kit.lure--;
     makeNoise(run, { x: p.x, y: p.y, radius: 260, strength: 0.3, kind: 'lure' });
@@ -136,6 +141,8 @@ export function stepRun(run, input, dt) {
   const tier = alarmTier(alarm);
 
   for (const t of TOOLS) if (input.wasPressed(t.key)) run.selected = t.id;
+  if (input.wasPressed('q')) { run.routesPinned = !(run.routesPinned || run.routeTimer > 0); run.routeTimer = 0; }
+  run.routeTimer = Math.max(0, run.routeTimer - dt);
   if (input.mouse.clicked || input.wasPressed(' ')) useTool(run, input);
 
   const step = updateThief(thief, map, input, dt);

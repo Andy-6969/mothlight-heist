@@ -9,6 +9,9 @@ import { lasersOn } from '../systems/heist.js';
 import { TOOLS } from '../systems/tools.js';
 import { C } from './palette.js';
 import { drawNightVeil } from './lighting.js';
+import { drawMinimap } from './minimap.js';
+import { drawRoutes } from './routes-overlay.js';
+import { viewFor, screenToWorld, VIEW_ZOOM } from '../world/viewport.js';
 
 const layers = new WeakMap();
 
@@ -25,12 +28,18 @@ export function staticLayerFor(run) {
 export function drawHeistFrame(g, run, time, opts = {}) {
   const smokes = run.smokes.map((s) => ({ x: s.x, y: s.y, r: s.r * (0.4 + 0.6 * s.grow) }));
   run.lasersOn = lasersOn(run);
+  const view = viewFor(run, opts.noHud ? 1 : VIEW_ZOOM);
+  run.view = view;
   g.save();
+  g.beginPath(); g.rect(0, MAP_Y, 1280, 576); g.clip();
   if (opts.shake) g.translate(Math.sin(time * 70) * opts.shake, Math.cos(time * 53) * opts.shake);
   g.translate(0, MAP_Y);
+  g.scale(view.zoom, view.zoom);
+  g.translate(-view.ox, -view.oy);
   g.drawImage(staticLayerFor(run), 0, 0);
   drawDynamicWorld(g, run, time);
   drawNightVeil(g, run, smokes, time);
+  if (!opts.noHud && (run.routesPinned || run.routeTimer > 0)) drawRoutes(g, run.routes, time, Math.min(1, 0.35 + run.routeTimer / 3 + (run.routesPinned ? 1 : 0)) * 0.9);
   drawCones(g, run, smokes, time);
   drawNoises(g, run.noises);
   drawBells(g, run.bells, time);
@@ -46,6 +55,7 @@ export function drawHeistFrame(g, run, time, opts = {}) {
     g.fillStyle = `rgba(255,61,90,${run.alarm.flash * 0.18})`;
     g.fillRect(0, MAP_Y, 1280, 576);
   }
+  if (!opts.noHud) drawMinimap(g, run, view, time);
   if (opts.noHud) {
     g.fillStyle = C.hud;
     g.fillRect(0, 0, 1280, MAP_Y);
@@ -62,7 +72,8 @@ function drawAim(g, run, mouse) {
   const tool = TOOLS.find((t) => t.id === run.selected);
   if (!tool || !tool.reach || !(run.kit[tool.id] > 0)) return;
   const t = run.thief;
-  const mx = mouse.x, my = mouse.y - MAP_Y;
+  const w = screenToWorld(run, mouse.x, mouse.y);
+  const mx = w.x, my = w.y;
   const d = Math.hypot(mx - t.x, my - t.y);
   const k = d > tool.reach ? tool.reach / d : 1;
   const px = t.x + (mx - t.x) * k, py = t.y + (my - t.y) * k;
