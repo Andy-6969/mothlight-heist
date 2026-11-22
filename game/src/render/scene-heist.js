@@ -46,6 +46,12 @@ export function drawHeistFrame(g, run, time, opts = {}) {
     g.fillStyle = `rgba(255,61,90,${run.alarm.flash * 0.18})`;
     g.fillRect(0, MAP_Y, 1280, 576);
   }
+  if (opts.noHud) {
+    g.fillStyle = C.hud;
+    g.fillRect(0, 0, 1280, MAP_Y);
+    g.fillRect(0, 640, 1280, 80);
+    return;
+  }
   drawTopBar(g, run, time);
   drawToolBelt(g, run);
   drawToast(g, opts.toast);

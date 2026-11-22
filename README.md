@@ -27,6 +27,8 @@ The alarm meter has four tiers: Calm, Wary, Alert, Lockdown. Each tier makes the
 cones longer and their steps faster, and once the meter reaches a tier it never drops below it.
 At 100% the building locks down.
 
+![Lantern Cartography: a survey sheet of wardens, cameras and Moth's route](docs/poster/mothlight-poster.png)
+
 ## Controls
 
 | Key | Action |

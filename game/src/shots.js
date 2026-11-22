@@ -31,8 +31,6 @@ export function stageShot(game, name) {
     advance(game, 6.2);
     place(run, 17, 9);
     run.thief.facing = -0.3;
-    run.thief.sneaking = true;
-    run.thief.moving = true;
     run.lootValue = 380;
     run.lootCount = 2;
     run.map.loot[0].taken = true;
@@ -44,6 +42,8 @@ export function stageShot(game, name) {
     advance(game, 0.4);
     run.guards[1].suspicion = 0.62;
     run.guards[1].state = 'suspicious';
+    run.thief.sneaking = true;
+    run.thief.moving = true;
     run.time = 74;
     game.toast = null;
   } else if (name === 'plan') {

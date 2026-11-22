@@ -41,7 +41,7 @@ export function drawTitle(g, time, best) {
   g.font = font(24, 'italic', FONT_DISPLAY);
   g.fillStyle = C.lantern;
   g.fillText('Three heists in the lamplit city of Vellmar', 640, 372);
-  panel(g, 360, 410, 560, 210);
+  panel(g, 360, 410, 560, 172);
   g.font = font(16);
   g.fillStyle = C.text;
   const lines = [

@@ -1,7 +1,7 @@
 // Mothlight boots here: canvas and letterboxing, a fixed 60 Hz loop, and the draw of each scene.
 
 import { createInput, VIEW_W, VIEW_H } from './core/input.js';
-import { createGame, updateGame } from './scenes/flow.js';
+import { createGame, updateGame, startPlan } from './scenes/flow.js';
 import { drawHeistFrame } from './render/scene-heist.js';
 import { drawPlanBoard } from './render/plan-board.js';
 import { drawTitle, drawCaught, drawResults, drawFinale } from './render/overlays.js';
@@ -42,7 +42,7 @@ function draw() {
   const t = game.time || 0;
   switch (game.scene) {
     case 'title':
-      drawHeistFrame(g, game.attract, t);
+      drawHeistFrame(g, game.attract, t, { noHud: true });
       drawTitle(g, t, game.best);
       break;
     case 'plan':
@@ -103,6 +103,7 @@ if (shot) stageShot(game, shot, Number(params.get('seed') || 1));
 window.__mothlight = {
   game,
   input,
+  startPlan,
   step(frames = 1) { for (let i = 0; i < frames; i++) { updateGame(game, input, STEP); input.endFrame(); } },
 };
 requestAnimationFrame(frame);

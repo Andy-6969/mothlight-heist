@@ -143,6 +143,27 @@ def test_laser_trips_alarm(page, errors):
     assert res >= 30
 
 
+def test_every_entry_is_safe_at_the_start(page, errors):
+    page.goto(URL)
+    page.wait_for_load_state("networkidle")
+    res = page.evaluate("""() => {
+      const m = window.__mothlight, I = m.input, out = [];
+      for (let lvl = 0; lvl < 3; lvl++) {
+        for (let e = 0; e < 2; e++) {
+          m.startPlan(m.game, lvl);
+          m.game.plan.entry = e;
+          I.press('Enter'); m.step(1);
+          m.step(240);  // stand still at the entry for four seconds
+          const r = m.game.run;
+          out.push({ lvl, e, worst: Math.max(...r.guards.map(g => g.suspicion)), outcome: r.outcome });
+        }
+      }
+      return out;
+    }""")
+    for row in res:
+        assert row["outcome"] is None and row["worst"] < 0.3, row
+
+
 def test_retry_after_caught(page, errors):
     fresh(page)
     res = page.evaluate("""() => {
