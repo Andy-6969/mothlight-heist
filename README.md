@@ -13,6 +13,10 @@ the Sallow & Finch Savings House and the Brasswick Observatory.
 - **Plan.** Every job opens on a blueprint: each warden's patrol loop, every camera's sweep, the
   entry points. Spend a tight budget on smoke vials, brass bells, camera loops, lockpicks and
   glass cutters. Shadow cover and vents cost nothing.
+- **Chalk the routes.** The board chalks every way to the vault for your chosen entry, each
+  with its price: A the vent crawl (free, slow), B the picked lock ($60), C the laser hall
+  (time the pulse), plus the getaway. Press Q during the job to bring the chalk back. A close
+  camera follows Moth while the blueprint minimap shows every warden and camera cone.
 - **Read the cones.** Wardens carry lanterns. Their cones sweep while they pause and grow hot as
   they get suspicious. Hatched shadow cuts how far a cone can see you. Sneaking (Shift) is
   silent; walking upright leaves footsteps they can hear.
