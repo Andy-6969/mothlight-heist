@@ -118,7 +118,7 @@ export function drawPlanBoard(g, plan, time) {
     g.fillStyle = C.textDim;
     g.fillText(`have ${n}/${t.max}   key ${t.key}`, x + 42, y + 38);
     g.fillStyle = C.loot;
-    g.fillText('click: +   right-click: -', x + 42, y + 54);
+    g.fillText('click buys, right sells', x + 42, y + 54);
   });
   const hover = TOOLS[plan.hover ?? -1];
   g.textAlign = 'left';

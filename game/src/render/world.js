@@ -12,6 +12,7 @@ export function buildStaticLayer(map) {
   const g = layer.getContext('2d');
   g.fillStyle = C.floor;
   g.fillRect(0, 0, layer.width, layer.height);
+  drawRoomFloors(g, map);
   drawBlueprintGrid(g, layer.width, layer.height);
   for (let y = 0; y < map.rows; y++) {
     for (let x = 0; x < map.cols; x++) {
@@ -31,16 +32,88 @@ export function buildStaticLayer(map) {
   return layer;
 }
 
+/** Split the floor into rooms (walls and doorways divide them) and give each its own floor. */
+export function findRooms(map) {
+  const room = new Int16Array(map.cols * map.rows).fill(-1);
+  const rooms = [];
+  const open = (x, y) => {
+    const t = tileAt(map, x, y);
+    return t !== '#' && t !== 'd' && t !== 'D' && t !== '=';
+  };
+  for (let y = 0; y < map.rows; y++) {
+    for (let x = 0; x < map.cols; x++) {
+      if (room[y * map.cols + x] >= 0 || !open(x, y)) continue;
+      const id = rooms.length;
+      const cells = [];
+      const stack = [[x, y]];
+      room[y * map.cols + x] = id;
+      while (stack.length) {
+        const [cx, cy] = stack.pop();
+        cells.push([cx, cy]);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = cx + dx, ny = cy + dy;
+          if (nx < 0 || ny < 0 || nx >= map.cols || ny >= map.rows) continue;
+          if (room[ny * map.cols + nx] >= 0 || !open(nx, ny)) continue;
+          room[ny * map.cols + nx] = id;
+          stack.push([nx, ny]);
+        }
+      }
+      rooms.push(cells);
+    }
+  }
+  return rooms;
+}
+
+const FLOORS = [
+  { base: '#16323c', accent: '#1b3c47', kind: 'tile' }, // canal-stone halls
+  { base: '#3a1f26', accent: '#4a2830', kind: 'carpet' }, // wine gallery carpet
+  { base: '#2e2418', accent: '#3a2e1f', kind: 'parquet' }, // oiled parquet
+  { base: '#1d2a3a', accent: '#24354a', kind: 'marble' }, // night marble
+];
+
+function drawRoomFloors(g, map) {
+  findRooms(map).forEach((cells, i) => {
+    const f = cells.length < 12 ? FLOORS[0] : FLOORS[i % FLOORS.length];
+    for (const [x, y] of cells) {
+      const px = x * TILE, py = y * TILE;
+      g.fillStyle = f.base;
+      g.fillRect(px, py, TILE, TILE);
+      g.fillStyle = f.accent;
+      if (f.kind === 'tile') {
+        g.fillRect(px + 1, py + 1, TILE / 2 - 2, TILE / 2 - 2);
+        g.fillRect(px + TILE / 2 + 1, py + TILE / 2 + 1, TILE / 2 - 2, TILE / 2 - 2);
+      } else if (f.kind === 'carpet') {
+        g.beginPath();
+        g.moveTo(px + TILE / 2, py + 4); g.lineTo(px + TILE - 4, py + TILE / 2);
+        g.lineTo(px + TILE / 2, py + TILE - 4); g.lineTo(px + 4, py + TILE / 2);
+        g.fill();
+        g.fillStyle = 'rgba(214,170,90,0.18)';
+        g.fillRect(px + TILE / 2 - 1, py + TILE / 2 - 1, 2, 2);
+      } else if (f.kind === 'parquet') {
+        const flip = (x + y) % 2 === 0;
+        for (let k = 0; k < 4; k++) {
+          if (flip) g.fillRect(px + k * 8 + 1, py + 1, 6, TILE - 2);
+          else g.fillRect(px + 1, py + k * 8 + 1, TILE - 2, 6);
+        }
+      } else {
+        if ((x + y) % 2 === 0) g.fillRect(px, py, TILE, TILE);
+        g.strokeStyle = 'rgba(160,190,220,0.08)';
+        g.beginPath(); g.moveTo(px + 3, py + 20); g.lineTo(px + 26, py + 6); g.stroke();
+      }
+    }
+  });
+}
+
 function drawBlueprintGrid(g, w, h) {
   g.lineWidth = 1;
   for (let x = 0; x <= w; x += TILE / 2) {
     g.strokeStyle = x % (TILE * 4) === 0 ? C.floorLineMajor : C.floorLine;
-    g.globalAlpha = x % TILE === 0 ? 0.7 : 0.25;
+    g.globalAlpha = x % TILE === 0 ? 0.35 : 0.1;
     g.beginPath(); g.moveTo(x + 0.5, 0); g.lineTo(x + 0.5, h); g.stroke();
   }
   for (let y = 0; y <= h; y += TILE / 2) {
     g.strokeStyle = y % (TILE * 4) === 0 ? C.floorLineMajor : C.floorLine;
-    g.globalAlpha = y % TILE === 0 ? 0.7 : 0.25;
+    g.globalAlpha = y % TILE === 0 ? 0.35 : 0.1;
     g.beginPath(); g.moveTo(0, y + 0.5); g.lineTo(w, y + 0.5); g.stroke();
   }
   g.globalAlpha = 1;
@@ -81,6 +154,16 @@ function drawWallTile(g, map, x, y) {
   if (below !== '#') {
     g.fillStyle = C.wallSide;
     g.fillRect(px, py + TILE - 9, TILE, 9);
+    // now and then a gilt-framed painting hangs on the wall face
+    if (below !== '=' && (x * 7 + y * 13) % 5 === 0 && x > 0 && x < map.cols - 1) {
+      const hues = ['#7b3b52', '#2f5d73', '#6d5a2a', '#3e6b4b'];
+      g.fillStyle = '#c9a24a';
+      g.fillRect(px + 6, py + 10, TILE - 12, 16);
+      g.fillStyle = hues[(x + y) % hues.length];
+      g.fillRect(px + 8, py + 12, TILE - 16, 12);
+      g.fillStyle = 'rgba(255,240,200,0.35)';
+      g.beginPath(); g.arc(px + 13 + ((x * 3) % 6), py + 17, 2.5, 0, Math.PI * 2); g.fill();
+    }
   }
   g.strokeStyle = 'rgba(74,63,49,0.35)';
   g.lineWidth = 1;
@@ -258,6 +341,6 @@ export function drawExitLabel(g, run) {
   g.textAlign = 'center';
   for (const gr of groups) {
     g.fillStyle = run.getaway ? C.exit : 'rgba(111,227,255,0.6)';
-    g.fillText(run.getaway ? 'GETAWAY BOAT' : 'getaway', gr.x - 6, gr.y - 20);
+    g.fillText(run.getaway ? 'GETAWAY BOAT' : 'getaway', Math.min(gr.x - 6, 1230), gr.y - 20);
   }
 }

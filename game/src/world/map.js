@@ -99,6 +99,10 @@ export function castRay(map, ox, oy, angle, maxDist, blocks = blocksSight) {
   let tMaxY = dy > 0 ? ((ty + 1) * TILE - oy) / dy : (oy - ty * TILE) / (-dy || 1e-9);
   let t = 0;
   while (t < maxDist) {
+    // a ray that grazes the corner where two blocking tiles meet diagonally must stop there
+    if (Math.abs(tMaxX - tMaxY) < 0.75 && blocks(tileAt(map, tx + stepX, ty)) && blocks(tileAt(map, tx, ty + stepY))) {
+      return Math.min(tMaxX, tMaxY, maxDist);
+    }
     if (tMaxX < tMaxY) { t = tMaxX; tMaxX += tDeltaX; tx += stepX; }
     else { t = tMaxY; tMaxY += tDeltaY; ty += stepY; }
     if (t >= maxDist) break;

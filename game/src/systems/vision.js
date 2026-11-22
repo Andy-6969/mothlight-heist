@@ -35,13 +35,20 @@ export function coneSees(map, smokes, watcher, cone, px, py, rangeScale = 1) {
 
 /** Polygon points of a cone as drawn: rays fanned across it, cut short by walls and smoke. */
 export function conePolygon(map, smokes, watcher, cone, rays = 36) {
-  const pts = [{ x: watcher.x, y: watcher.y }];
+  const angles = [], dists = [];
   for (let i = 0; i <= rays; i++) {
     const a = cone.angle - cone.half + (2 * cone.half * i) / rays;
-    let d = castRay(map, watcher.x, watcher.y, a, cone.range);
-    d = Math.min(d, smokeHit(smokes, watcher.x, watcher.y, a, d));
-    pts.push({ x: watcher.x + Math.cos(a) * d, y: watcher.y + Math.sin(a) * d });
+    const d = castRay(map, watcher.x, watcher.y, a, cone.range);
+    angles.push(a);
+    dists.push(Math.min(d, smokeHit(smokes, watcher.x, watcher.y, a, d)));
   }
+  // a lone ray far longer than both neighbours slipped through a seam: trim it
+  for (let i = 1; i < rays; i++) {
+    const near = Math.max(dists[i - 1], dists[i + 1]);
+    if (dists[i] > near + 48) dists[i] = near;
+  }
+  const pts = [{ x: watcher.x, y: watcher.y }];
+  for (let i = 0; i <= rays; i++) pts.push({ x: watcher.x + Math.cos(angles[i]) * dists[i], y: watcher.y + Math.sin(angles[i]) * dists[i] });
   return pts;
 }
 

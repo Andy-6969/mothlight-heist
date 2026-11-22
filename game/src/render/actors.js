@@ -7,6 +7,7 @@ export function drawThief(g, t, time) {
   const bob = t.moving ? Math.sin(t.bob) * 1.5 : 0;
   g.save();
   g.translate(t.x, t.y + bob);
+  g.scale(1.3, 1.3);
   if (t.inVent) g.globalAlpha = 0.45;
   // soft halo so the thief never gets lost on the dark floor
   g.fillStyle = 'rgba(143,211,255,0.18)';
@@ -31,6 +32,10 @@ export function drawThief(g, t, time) {
   g.fillStyle = '#26323a';
   g.beginPath(); g.arc(5, 0, 2.2, 0, Math.PI * 2); g.fill();
   g.restore();
+  g.font = font(11, 'bold');
+  g.textAlign = 'center';
+  g.fillStyle = C.wing;
+  g.fillText(t.sneaking ? 'Moth (sneaking)' : 'Moth', t.x, t.y + 27);
   if (t.carrying) {
     g.fillStyle = C.loot;
     g.beginPath(); g.arc(t.x - 9, t.y - 11, 4, 0, Math.PI * 2); g.fill();
@@ -41,6 +46,7 @@ export function drawThief(g, t, time) {
 export function drawGuard(g, guard, time) {
   g.save();
   g.translate(guard.x, guard.y);
+  g.scale(1.2, 1.2);
   g.fillStyle = 'rgba(0,0,0,0.35)';
   g.beginPath(); g.ellipse(2, 4, 12, 9, 0, 0, Math.PI * 2); g.fill();
   g.rotate(guard.angle);
@@ -62,6 +68,11 @@ export function drawGuard(g, guard, time) {
 function drawSuspicion(g, guard, time) {
   if (guard.state === 'patrol' && guard.suspicion < 0.05) return;
   const x = guard.x, y = guard.y - 24;
+  g.font = font(11, 'bold');
+  g.textAlign = 'center';
+  g.fillStyle = guard.state === 'alert' ? C.lanternHot : C.lantern;
+  const mood = { alert: 'alerted', investigate: 'investigating', search: 'searching', suspicious: 'suspicious', pause: 'uneasy', patrol: 'uneasy' }[guard.state];
+  g.fillText(`${guard.name}: ${mood}`, x, guard.y + 30);
   if (guard.state === 'alert') {
     g.fillStyle = C.lanternHot;
     g.font = font(20, 'bold');

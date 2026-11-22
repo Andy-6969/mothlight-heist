@@ -8,6 +8,7 @@ import { drawTopBar, drawToolBelt, drawJobPrompt, drawToast } from '../ui/hud.js
 import { lasersOn } from '../systems/heist.js';
 import { TOOLS } from '../systems/tools.js';
 import { C } from './palette.js';
+import { drawNightVeil } from './lighting.js';
 
 const layers = new WeakMap();
 
@@ -29,6 +30,7 @@ export function drawHeistFrame(g, run, time, opts = {}) {
   g.translate(0, MAP_Y);
   g.drawImage(staticLayerFor(run), 0, 0);
   drawDynamicWorld(g, run, time);
+  drawNightVeil(g, run, smokes, time);
   drawCones(g, run, smokes, time);
   drawNoises(g, run.noises);
   drawBells(g, run.bells, time);
