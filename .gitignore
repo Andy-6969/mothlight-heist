@@ -1,0 +1,7 @@
+out/
+node_modules/
+__pycache__/
+*.tar.gz
+.pytest_cache/
+tools/_shots/
+.claude/

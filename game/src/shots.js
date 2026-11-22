@@ -1,79 +1,99 @@
-// The screenshot scenes behind ?shot=start|play|end. Each one plays the real rules forward from a
-// fresh world for a fixed number of steps, steered by a simple autopilot (look ahead each way the
-// paddle could move, keep clear of blocks, chase the lowest coin when that is safe), so the frame
-// is what a short game really looks like and the same seed always gives the same frame.
-import { FIELD, PLAYER, STEP } from './config.js';
-import { EVENT_OVER, KIND_BLOCK } from './world.js';
-import { SCREEN_OVER, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
+// Staged moments for the screenshots (?shot=<name>): each one runs the real simulation to a
+// set point and then holds the frame still.
 
-const START_SECONDS = 5;
-const PLAY_SECONDS = 26;
-const END_LIMIT_SECONDS = 600;
-/**
- * How far ahead, in seconds, the autopilot checks each way it could move: the play scene's pilot
- * looks well ahead and keeps all its lives; the end scene's looks only a moment ahead, so it is
- * caught out once the blocks speed up, as a hurried player is.
- */
-const HORIZON_PLAY = 0.7;
-const HORIZON_END = 0.25;
-const SAMPLE = 1 / 30;
-const DIRECTIONS = [0, -1, 1];
-/** Extra room, each side, it keeps between the paddle and a block. */
-const MARGIN = 10;
+import { startPlan, startHeist } from './scenes/flow.js';
+import { stepRun, scoreRun } from './systems/heist.js';
+import { raiseAlarm } from './systems/alarm.js';
+import { TILE } from './world/map.js';
 
-/** Seconds until moving in `direction` (-1, 0, 1) runs the paddle into a block; Infinity when it never does. */
-function timeToHit(state, direction, horizon) {
-  const player = state.player;
-  for (let t = SAMPLE; t <= horizon; t += SAMPLE) {
-    const x = Math.min(FIELD.width - player.width, Math.max(0, player.x + direction * PLAYER.speed * t));
-    for (let index = 0; index < state.items.length; index += 1) {
-      const item = state.items[index];
-      if (!item.active || item.kind !== KIND_BLOCK) continue;
-      const y = item.y + item.speed * t;
-      if (y + item.height > player.y && y < player.y + player.height && item.x < x + player.width + MARGIN && item.x + item.width > x - MARGIN) return t;
-    }
+const idle = { isDown: () => false, wasPressed: () => false, mouse: { x: 0, y: 0, clicked: false } };
+
+function advance(game, seconds) {
+  for (let i = 0; i < Math.round(seconds * 60); i++) {
+    game.time = (game.time || 0) + 1 / 60;
+    stepRun(game.run, idle, 1 / 60);
   }
-  return Infinity;
+  game.run.events.length = 0;
 }
 
-/** Of the safe ways to move, the one toward the lowest coin (or the centre); else the one that is hit last. */
-function autopilot(state, horizon) {
-  const player = state.player;
-  let coin = null;
-  for (let index = 0; index < state.items.length; index += 1) {
-    const item = state.items[index];
-    if (item.active && item.kind !== KIND_BLOCK && (coin === null || item.y > coin.y)) coin = item;
-  }
-  const target = coin === null ? FIELD.width / 2 : coin.x + coin.width / 2;
-  const centre = player.x + player.width / 2;
-  const wanted = target > centre + 8 ? 1 : target < centre - 8 ? -1 : 0;
-  let best = wanted;
-  let bestTime = timeToHit(state, wanted, horizon);
-  for (let index = 0; index < DIRECTIONS.length && bestTime !== Infinity; index += 1) {
-    const time = timeToHit(state, DIRECTIONS[index], horizon);
-    if (time > bestTime) {
-      bestTime = time;
-      best = DIRECTIONS[index];
-    }
-  }
-  return best;
+function place(run, tx, ty) {
+  run.thief.x = (tx + 0.5) * TILE;
+  run.thief.y = (ty + 0.5) * TILE;
 }
 
-/**
- * Set `world` to the named scene (start, play or end; any other name is start) and return the
- * screen to draw over it and the best score to show.
- */
-export function stageShot(name, world) {
-  world.reset();
-  if (name !== 'play' && name !== 'end') {
-    for (let index = 0; index < START_SECONDS / STEP; index += 1) world.step(STEP, 0, true);
-    return { screen: SCREEN_TITLE, best: 0 };
+export function stageShot(game, name) {
+  if (name === 'heist') {
+    startPlan(game, 0);
+    game.plan.kit = { smoke: 2, lure: 2, loop: 1, pick: 1, cutter: 1 };
+    startHeist(game);
+    const run = game.run;
+    place(run, 1, 9);
+    advance(game, 6.2);
+    place(run, 17, 9);
+    run.thief.facing = -0.3;
+    run.thief.sneaking = true;
+    run.thief.moving = true;
+    run.lootValue = 380;
+    run.lootCount = 2;
+    run.map.loot[0].taken = true;
+    run.map.cases[0].opened = true;
+    run.kit.cutter = 0;
+    raiseAlarm(run.alarm, 41, 'Camera spotted you');
+    run.alarm.flash = 0;
+    run.smokes.push({ x: 26 * TILE, y: 12.5 * TILE, r: 58, life: 5, grow: 1 });
+    advance(game, 0.4);
+    run.guards[1].suspicion = 0.62;
+    run.guards[1].state = 'suspicious';
+    run.time = 74;
+    game.toast = null;
+  } else if (name === 'plan') {
+    startPlan(game, 1);
+    game.plan.kit = { smoke: 2, lure: 2, loop: 1, pick: 1, cutter: 0 };
+    game.plan.hover = 2;
+    game.time = 3.1;
+  } else if (name === 'caught') {
+    startPlan(game, 2);
+    game.plan.kit = { smoke: 1, lure: 2, loop: 1, pick: 1, cutter: 1 };
+    startHeist(game);
+    advance(game, 3);
+    const run = game.run;
+    const g = run.guards[2];
+    run.thief.x = g.x + Math.cos(g.angle) * 26;
+    run.thief.y = g.y + Math.sin(g.angle) * 26;
+    raiseAlarm(run.alarm, 58, 'Warden Lune raised the alarm');
+    run.outcome = 'caught';
+    run.caughtBy = { name: g.name, x: g.x, y: g.y, seenFor: 1.8, inShadow: false, sneaking: false };
+    game.scene = 'caught';
+  } else if (name === 'getaway') {
+    startPlan(game, 2);
+    game.plan.kit = { smoke: 2, lure: 1, loop: 2, pick: 2, cutter: 1 };
+    startHeist(game);
+    const run = game.run;
+    advance(game, 4);
+    run.map.vault.cracked = true;
+    run.thief.carrying = true;
+    run.lootValue = 2200 + 380;
+    run.getaway = { left: 38 };
+    place(run, 33, 13);
+    run.thief.facing = 0.2;
+    run.thief.moving = true;
+    raiseAlarm(run.alarm, 72, 'Captain Rook raised the alarm');
+    run.alarm.flash = 0;
+    run.guards[3].state = 'alert';
+    run.guards[3].suspicion = 1;
+    run.time = 162;
+    game.toast = { text: 'You have the Orrery Heart! Run for the boat.', life: 2, color: '#6fe3ff' };
+  } else if (name === 'results') {
+    startPlan(game, 0);
+    startHeist(game);
+    const run = game.run;
+    advance(game, 2);
+    run.lootValue = 900 + 380;
+    run.time = 128;
+    run.alarm.peak = 18;
+    run.outcome = 'escaped';
+    game.score = scoreRun(run);
+    game.purse = game.score.total;
+    game.scene = 'results';
   }
-  const limit = name === 'end' ? END_LIMIT_SECONDS : PLAY_SECONDS;
-  const horizon = name === 'end' ? HORIZON_END : HORIZON_PLAY;
-  for (let index = 0; index < limit / STEP; index += 1) {
-    if (world.step(STEP, autopilot(world.state, horizon), false) & EVENT_OVER) break;
-  }
-  const over = world.state.lives === 0;
-  return { screen: over ? SCREEN_OVER : SCREEN_PLAY, best: world.state.score };
 }
